@@ -180,29 +180,64 @@ void _pio_set_output(Pio *p_pio, const uint32_t ul_mask,
         const uint32_t ul_multidrive_enable,
         const uint32_t ul_pull_up_enable)
 {
-	_pio_pull_up(p_pio, ul_mask, ul_pull_up_enable);
-	// Enable the corresponding PIO pin(s)
+	_pio_pull_up(p_pio, ul_mask, ul_pull_up_enable);  // Ativa ou desativa os resistores pull-up
+
+	// Habilita o(s) pino(s) do PIO para controle
 	p_pio->PIO_PER = ul_mask;
 
-	// Configure pin(s) as output
+	// Configura o(s) pino(s) como saída
 	p_pio->PIO_OER = ul_mask;
 
-	// Set default level on the pin(s)
+	// Define o nível padrão do(s) pino(s)
 	if (ul_default_level) {
-		_pio_set(p_pio, ul_mask);
+		_pio_set(p_pio, ul_mask);  // Define nível alto (1)
 		} else {
-		_pio_clear(p_pio, ul_mask);
+		_pio_clear(p_pio, ul_mask);  // Define nível baixo (0)
 	}
 
-	// Enable or disable multi-drive if needed
+	// Habilita ou desabilita o multi-drive, se necessário
 	if (ul_multidrive_enable) {
-		p_pio->PIO_MDER = ul_mask;
+		p_pio->PIO_MDER = ul_mask;  // Habilita multi-drive
 		} else {
-		p_pio->PIO_MDDR = ul_mask;
+		p_pio->PIO_MDDR = ul_mask;  // Desabilita multi-drive
 	}
 
-	// Enable or disable pull-up if needed
+	// Habilita ou desabilita os resistores pull-up, se necessário
 	_pio_pull_up(p_pio, ul_mask, ul_pull_up_enable);
+}
+
+/**
+ * \brief Return 1 if one or more PIOs of the given Pin instance currently have
+ * a high level; otherwise returns 0. This method returns the actual value that
+ * is being read on the pin. To return the supposed output value of a pin, use
+ * pio_get_output_data_status() instead.
+ *
+ * \param p_pio Pointer to a PIO instance.
+ * \param ul_type PIO type.
+ * \param ul_mask Bitmask of one or more pin(s) to configure.
+ *
+ * \retval 1 at least one PIO currently has a high level.
+ * \retval 0 all PIOs have a low level.
+ */
+uint32_t _pio_get(Pio *p_pio, const pio_type_t ul_type,
+        const uint32_t ul_mask)
+{
+	if (ul_type == PIO_INPUT) {  // Se quisermos verificar um pino de entrada
+        // Verifica se o pino está em nível alto (1) ou baixo (0)
+        if (p_pio->PIO_PDSR & ul_mask) {
+            return 1;  // Pino está em nível alto
+        } else {
+            return 0;  // Pino está em nível baixo
+        }
+    } else if (ul_type == PIO_OUTPUT_0) {  // Se quisermos verificar um pino de saída
+        // Verifica se o pino de saída está configurado como nível baixo (0) ou alto (1)
+        if (p_pio->PIO_ODSR & ul_mask) {
+            return 0;  // Pino de saída está em nível alto (lembrando que nível alto é invertido)
+        } else {
+            return 1;  // Pino de saída está em nível baixo (lembrando que nível baixo é invertido)
+        }
+    }
+    return 0;  // Tipo de pino inválido
 }
 
 // Função de inicialização do uC
@@ -246,7 +281,7 @@ int main(void) {
   init();
 
   while (1) {
-    if (!pio_get(BUT1_PIO, PIO_INPUT,
+    if (!_pio_get(BUT1_PIO, PIO_INPUT,
                  BUT1_PIO_IDX_MASK)) { // Caso aperte Botao 1
       for (int i = 0; i < 5; i++) {
         _pio_set(LED1_PIO, LED1_PIO_IDX_MASK);
@@ -256,7 +291,7 @@ int main(void) {
       }
       _pio_clear(LED1_PIO, LED1_PIO_IDX_MASK);
     }
-    if (!pio_get(BUT2_PIO, PIO_INPUT,
+    if (!_pio_get(BUT2_PIO, PIO_INPUT,
                  BUT2_PIO_IDX_MASK)) { // Caso aperte Botao 2
       for (int i = 0; i < 5; i++) {
         _pio_set(LED2_PIO, LED2_PIO_IDX_MASK);
@@ -266,7 +301,7 @@ int main(void) {
       }
       _pio_clear(LED2_PIO, LED2_PIO_IDX_MASK);
     }
-    if (!pio_get(BUT3_PIO, PIO_INPUT,
+    if (!_pio_get(BUT3_PIO, PIO_INPUT,
                  BUT3_PIO_IDX_MASK)) { // Caso aperte Botao 3
       for (int i = 0; i < 5; i++) {
         _pio_set(LED3_PIO, LED3_PIO_IDX_MASK);
