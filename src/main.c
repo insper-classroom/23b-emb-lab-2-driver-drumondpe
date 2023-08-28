@@ -13,7 +13,7 @@
 /*  The internal pin pull-up is active. */
 #define _PIO_PULLUP              (1u << 0)
 /*  The internal glitch filter is active. */
-#define _PIO_DEGLITCH            (1u << 1)
+#define _PIO_DEGLITCH            (1u << 2)
 /*  The internal debouncing filter is active. */
 #define _PIO_DEBOUNCE            (1u << 3)
 
@@ -220,24 +220,33 @@ void _pio_set_output(Pio *p_pio, const uint32_t ul_mask,
  * \retval 0 all PIOs have a low level.
  */
 uint32_t _pio_get(Pio *p_pio, const pio_type_t ul_type,
-        const uint32_t ul_mask)
+const uint32_t ul_mask)
 {
 	if (ul_type == PIO_INPUT) {  // Se quisermos verificar um pino de entrada
-        // Verifica se o pino está em nível alto (1) ou baixo (0)
-        if (p_pio->PIO_PDSR & ul_mask) {
-            return 1;  // Pino está em nível alto
-        } else {
-            return 0;  // Pino está em nível baixo
-        }
-    } else if (ul_type == PIO_OUTPUT_0) {  // Se quisermos verificar um pino de saída
-        // Verifica se o pino de saída está configurado como nível baixo (0) ou alto (1)
-        if (p_pio->PIO_ODSR & ul_mask) {
-            return 0;  // Pino de saída está em nível alto (lembrando que nível alto é invertido)
-        } else {
-            return 1;  // Pino de saída está em nível baixo (lembrando que nível baixo é invertido)
-        }
-    }
-    return 0;  // Tipo de pino inválido
+		// Verifica se o pino está em nível alto (1) ou baixo (0)
+		if (p_pio->PIO_PDSR & ul_mask) {
+			return 1;  // Pino está em nível alto
+			} else {
+			return 0;  // Pino está em nível baixo
+		}
+		} else if (ul_type == PIO_OUTPUT_0) {  // Se quisermos verificar um pino de saída
+		// Verifica se o pino de saída está configurado como nível baixo (0) ou alto (1)
+		if (p_pio->PIO_ODSR & ul_mask) {
+			return 0;  // Pino de saída está em nível alto (lembrando que nível alto é invertido)
+			} else {
+			return 1;  // Pino de saída está em nível baixo (lembrando que nível baixo é invertido)
+		}
+	}
+	return 0;  // Tipo de pino inválido
+}
+
+// Implementação da função delay
+void _delay_ms(uint32_t milis) {
+	unsigned long cycles = (sysclk_get_cpu_hz() / 2000) * milis;
+
+	for (unsigned long i = 0; i < cycles; i++) {
+		asm volatile("nop");
+	}
 }
 
 // Função de inicialização do uC
@@ -285,9 +294,9 @@ int main(void) {
                  BUT1_PIO_IDX_MASK)) { // Caso aperte Botao 1
       for (int i = 0; i < 5; i++) {
         _pio_set(LED1_PIO, LED1_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
         _pio_clear(LED1_PIO, LED1_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
       }
       _pio_clear(LED1_PIO, LED1_PIO_IDX_MASK);
     }
@@ -295,9 +304,9 @@ int main(void) {
                  BUT2_PIO_IDX_MASK)) { // Caso aperte Botao 2
       for (int i = 0; i < 5; i++) {
         _pio_set(LED2_PIO, LED2_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
         _pio_clear(LED2_PIO, LED2_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
       }
       _pio_clear(LED2_PIO, LED2_PIO_IDX_MASK);
     }
@@ -305,9 +314,9 @@ int main(void) {
                  BUT3_PIO_IDX_MASK)) { // Caso aperte Botao 3
       for (int i = 0; i < 5; i++) {
         _pio_set(LED3_PIO, LED3_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
         _pio_clear(LED3_PIO, LED3_PIO_IDX_MASK);
-        delay_ms(200);
+        _delay_ms(200);
       }
       _pio_clear(LED3_PIO, LED3_PIO_IDX_MASK);
     }
